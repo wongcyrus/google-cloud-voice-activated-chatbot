@@ -76,8 +76,7 @@ def bot_response(history):
 
 with gr.Blocks() as bot_interface:
     with gr.Row():
-        gr.HTML(cfg.bot["banner"])
-    
+        gr.HTML(cfg.bot["banner"])    
     with gr.Row(scale=1):
         chatbot=gr.Chatbot([(cfg.bot["initial_message"], None)], elem_id="chatbot").style(height=600)
     with gr.Row(scale=1):
@@ -96,6 +95,8 @@ with gr.Blocks() as bot_interface:
         with gr.Column(scale=1):
            token_limit = gr.Slider(0, 1024, step=1, label="Token limit", value=256, interactive=True)
            top_p = gr.Slider(0, 1, step=0.1, label="Top P", value=0.8, interactive=True)
+    with gr.Row():
+        gr.HTML(cfg.bot["footer"])    
     
     input_msg = user_input.submit(add_user_input, [chatbot, user_input], [chatbot, user_input], queue=False).then(bot_response, chatbot, chatbot)
     submitBtn.click(add_user_input, [chatbot, user_input], [chatbot, user_input], queue=False).then(bot_response, chatbot, chatbot)
