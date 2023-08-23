@@ -12,6 +12,7 @@ import path = require("path");
 import { CloudFunctionDeploymentConstruct } from "./components/cloud-function-deployment-construct";
 import { CloudFunctionConstruct } from "./components/cloud-function-construct";
 import { DatastoreConstruct } from "./components/datastore-construct";
+import { GoogleStorageBucketIamMember } from "./.gen/providers/google-beta/google-storage-bucket-iam-member";
 
 dotenv.config();
 
@@ -69,6 +70,26 @@ class ImageGenStack extends TerraformStack {
     //For the first deployment, it takes a while for API to be enabled.
     // await new Promise((r) => setTimeout(r, 30000));
 
+    const approvalImagecloudFunctionConstruct = await CloudFunctionConstruct.create(
+      this,
+      "approvalimage",
+      {
+        functionName: "approvalimage",
+        runtime: "python311",
+        entryPoint: "approvalimage",
+        timeout: 600,
+        availableMemory: "512Mi",
+        makePublic: true,
+        cloudFunctionDeploymentConstruct: cloudFunctionDeploymentConstruct,
+        environmentVariables: {
+          SECRET_KEY: process.env.SECRET_KEY!,
+          GMAIL: process.env.GMAIL!,
+          APP_PASSWORD: process.env.APP_PASSWORD!,
+        },
+        depandOn: cloudFunctionDeploymentConstruct.services,
+      }
+    );
+
     const cloudFunctionConstruct = await CloudFunctionConstruct.create(
       this,
       "genimage",
@@ -80,7 +101,15 @@ class ImageGenStack extends TerraformStack {
         availableMemory: "512Mi",
         makePublic: true,
         cloudFunctionDeploymentConstruct: cloudFunctionDeploymentConstruct,
-        environmentVariables: { OPENAI_API_KEY: process.env.OPENAI_API_KEY! },
+        environmentVariables: {
+          SECRET_KEY: process.env.SECRET_KEY!,
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
+          IMAGE_BUCKET: staticSitePattern1.siteBucket.name,
+          GMAIL: process.env.GMAIL!,
+          APP_PASSWORD: process.env.APP_PASSWORD!,
+          APPROVAL_URL: approvalImagecloudFunctionConstruct.cloudFunction.url,
+          APPROVER_EMAILS: process.env.APPROVER_EMAILS!,
+        },
         depandOn: cloudFunctionDeploymentConstruct.services,
       }
     );
@@ -89,14 +118,29 @@ class ImageGenStack extends TerraformStack {
       project: project.projectId,
       servicesAccount: cloudFunctionConstruct.serviceAccount,
     });
+    new GoogleStorageBucketIamMember(this, "static-site-iam-member", {
+      bucket: staticSitePattern1.siteBucket.name,
+      role: "roles/storage.legacyBucketWriter",
+      member: "serviceAccount:" + cloudFunctionConstruct.serviceAccount.email,
+    });
 
     new TerraformOutput(this, "static-site-url1", {
       value:
         "https://storage.googleapis.com/" + staticSitePattern1.siteBucket.name,
     });
 
-    new TerraformOutput(this, "gen-image-url", {
+    new TerraformOutput(this, "gen-image-function-url", {
       value: cloudFunctionConstruct.cloudFunction.url,
+    });
+
+    new TerraformOutput(this, "gen-image-url", {
+      value:
+        "https://storage.googleapis.com/" +
+        staticSitePattern1.siteBucket.name +
+        "/index.html?key=" +
+        process.env.SECRET_KEY! +
+        "&api=" +
+        cloudFunctionConstruct.cloudFunction.url,
     });
   }
   constructor(scope: Construct, id: string) {

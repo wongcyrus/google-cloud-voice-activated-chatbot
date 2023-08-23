@@ -65,7 +65,7 @@ export class StaticSitePattern extends Construct {
 
     new GoogleStorageBucketIamMember(this, "bucketIamMember", {
       bucket: this.siteBucket.id,
-      role: "roles/storage.objectViewer",
+      role: "roles/storage.legacyObjectReader",
       member: "allUsers",
     });
 
