@@ -3,7 +3,7 @@ import gradio as gr
 import config as cfg
 from google.cloud import speech
 import vertexai
-from vertexai.preview.language_models import ChatModel, InputOutputTextPair
+from vertexai.preview.language_models import ChatModel
 from google.cloud import translate_v2 as translate
 
 vertexai.init(project="cyrus-testing-2023", location="us-central1")
@@ -35,8 +35,6 @@ def transcribe_file(speech_file: str) -> speech.RecognizeResponse:
         # The first alternative is the most likely one for this portion.
         text = result.alternatives[0].transcript
         print(f"Transcript: {text}")
-
-
     return text
 
 def add_user_input(history, text):    
