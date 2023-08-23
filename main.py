@@ -35,8 +35,6 @@ def transcribe_file(speech_file: str) -> speech.RecognizeResponse:
         # The first alternative is the most likely one for this portion.
         text = result.alternatives[0].transcript
         print(f"Transcript: {text}")
-
-
     return text
 
 def add_user_input(history, text):    
