@@ -1,13 +1,12 @@
 
 import datetime
 import os
-from pathlib import Path
 import requests
 from flask import escape
 import functions_framework
 import smtplib
 from email.mime.text import MIMEText
-from datetime import datetime
+from google.cloud import datastore
 
 
 def send_email(subject, body, sender, recipients, password):
@@ -52,18 +51,42 @@ def approvalimage(request):
     public_url = request_args["public_url"]
     email = request_args["email"]
     key = request_args["key"]
+    approver_email = request_args["approver_email"]
     print(f"email: {email}")
 
     if key != os.getenv("SECRET_KEY"):
-        return ("Unauthorized", 401, headers)
-   
-    subject = "Your Gen Image at " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    body = public_url
+        return "Unauthorized", 401, headers
+    
+    if is_gen_image_job_approvaed(email, public_url):
+        return "Already approved!", 200, headers
+
+    subject = "Your Gen Image at " + datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    body = f"""
+Check out your generated image at
+
+{public_url}
+
+"""
     sender = os.getenv("GMAIL")
     recipients = [email]
     password = os.getenv("APP_PASSWORD")
 
     send_email(subject, body, sender, recipients, password)
+
+    update_gen_image_job(email, public_url, approver_email)
                   
-    return "Approved!", 200
+    return "Approved!", 200, headers
     
+def update_gen_image_job(email: str, image_url:str, approver_email:str) -> bool:
+    client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
+    key = client.key('GenImageJob', email + "->" +image_url)
+    entity = client.get(key)  
+    entity['approver_email'] = approver_email
+    entity['status'] = "APPROVAED"
+    entity['modify_time'] = datetime.datetime.now();   
+    client.put(entity)
+
+def is_gen_image_job_approvaed(email: str, image_url:str) -> str:
+    client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
+    student = client.get(client.key('GenImageJob', email + "->" +image_url))
+    return student['status'] == "APPROVAED"

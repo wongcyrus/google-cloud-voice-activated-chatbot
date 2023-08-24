@@ -12,8 +12,8 @@ from google.cloud import storage
 import smtplib
 from email.mime.text import MIMEText
 import urllib.parse
-
-
+from google.cloud import datastore
+import datetime
 
 openai.api_type = "azure"
 openai.api_base = "https://eastus.api.cognitive.microsoft.com/"
@@ -58,7 +58,7 @@ def genimage(request):
     print(f"email: {email}")
 
     if key != os.getenv("SECRET_KEY"):
-        return ("Unauthorized", 401, headers)
+        return "Unauthorized", 401, headers
 
     response = openai.Image.create(
         prompt=prompt,
@@ -71,29 +71,17 @@ def genimage(request):
     public_url = upload_image_to_bucket(image_path)
 
     params = {'key':key, 'email': email, 'public_url': public_url}
-    approval_url = os.getenv("APPROVAL_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
-
-    body= f"""
-Please check the following image and click the link to approve it.
-
-{public_url}
-
-Approve: 
-
-{approval_url}
-
-
-"""
-
     approver_emails = os.getenv("APPROVER_EMAILS").split(",")
     subject = "Verify Gen Image for "+ email
     sender = os.getenv("GMAIL")
     recipients = approver_emails
     password = os.getenv("APP_PASSWORD")
 
-    send_email(subject, body, sender, recipients, password)
+    params = {'key':key, 'email': email, 'public_url': public_url}
+    save_gen_image_job(email, prompt, public_url)
+    send_email(subject, params, sender, recipients, password)   
                   
-    return "Please wait for a moment!", 200
+    return "Please check your email!", 200, headers
     
 def download_image(image_url):   
     # Download image from url
@@ -114,12 +102,45 @@ def upload_image_to_bucket(image_path):
     blob.upload_from_filename(image_path)
     return blob.public_url
     
-def send_email(subject, body, sender, recipients, password):
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = sender
-    msg['To'] = ', '.join(recipients)
+def send_email(subject:str, params:dict, sender:str, recipients:list[str], password:str):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
-       smtp_server.login(sender, password)
-       smtp_server.sendmail(sender, recipients, msg.as_string())
+        smtp_server.login(sender, password)   
+        for recipient in recipients:            
+            params['approver_email'] = recipient
+            body = get_email_body(params)
+            msg = MIMEText(body)
+            msg['Subject'] = subject
+            msg['From'] = sender
+            msg['To'] = recipient
+            smtp_server.sendmail(sender, recipient, msg.as_string())
+     
     print("Message sent!")
+
+def get_email_body(params:dict) -> str:    
+    approval_url = os.getenv("APPROVAL_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
+    body= f"""
+    Please check the following image and click the link to approve it.
+
+    {params["public_url"]}
+
+    Approve: 
+
+    {approval_url}
+
+    """
+    return body
+
+def save_gen_image_job(email: str, prompt:str, image_url:str) -> bool:
+    client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
+    key = client.key('GenImageJob', email + "->" +image_url)
+    entity = datastore.Entity(key=key)
+    now = datetime.datetime.now();
+    entity.update({
+        'email': email,
+        'prompt': prompt ,
+        'image_url':image_url,
+        'status': "WAITING_FOR_APPROVAL",
+        'create_time': now,
+        'modify_time': now 
+    })
+    client.put(entity)

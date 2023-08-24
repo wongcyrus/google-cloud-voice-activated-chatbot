@@ -118,6 +118,11 @@ class ImageGenStack extends TerraformStack {
       project: project.projectId,
       servicesAccount: cloudFunctionConstruct.serviceAccount,
     });
+    await DatastoreConstruct.create(this, "approvalImagedatastore", {
+      project: project.projectId,
+      servicesAccount: approvalImagecloudFunctionConstruct.serviceAccount,
+    });
+
     new GoogleStorageBucketIamMember(this, "static-site-iam-member", {
       bucket: staticSitePattern1.siteBucket.name,
       role: "roles/storage.legacyBucketWriter",
