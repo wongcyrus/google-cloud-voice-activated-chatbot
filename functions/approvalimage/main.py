@@ -1,5 +1,6 @@
 
 import datetime
+from datetime import timezone
 import os
 import requests
 from flask import escape
@@ -79,12 +80,13 @@ Check out your generated image at
     
 def update_gen_image_job(email: str, image_url:str, approver_email:str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
-    key = client.key('GenImageJob', email + "->" +image_url)
-    entity = client.get(key)  
-    entity['approver_email'] = approver_email
-    entity['status'] = "APPROVAED"
-    entity['modify_time'] = datetime.datetime.now();   
-    client.put(entity)
+    with client.transaction():
+        key = client.key('GenImageJob', email + "->" +image_url)
+        entity = client.get(key)  
+        entity['approver_email'] = approver_email
+        entity['status'] = "APPROVAED"
+        entity['modify_time'] = datetime.datetime.now(timezone.utc);   
+        client.put(entity)
 
 def is_gen_image_job_approvaed(email: str, image_url:str) -> str:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))

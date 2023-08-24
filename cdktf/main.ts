@@ -13,6 +13,7 @@ import { CloudFunctionDeploymentConstruct } from "./components/cloud-function-de
 import { CloudFunctionConstruct } from "./components/cloud-function-construct";
 import { DatastoreConstruct } from "./components/datastore-construct";
 import { GoogleStorageBucketIamMember } from "./.gen/providers/google-beta/google-storage-bucket-iam-member";
+import { GoogleDatastoreIndex } from "./.gen/providers/google-beta/google-datastore-index";
 
 dotenv.config();
 
@@ -90,7 +91,7 @@ class ImageGenStack extends TerraformStack {
       }
     );
 
-    const cloudFunctionConstruct = await CloudFunctionConstruct.create(
+    const genImagecloudFunctionConstruct = await CloudFunctionConstruct.create(
       this,
       "genimage",
       {
@@ -109,24 +110,42 @@ class ImageGenStack extends TerraformStack {
           APP_PASSWORD: process.env.APP_PASSWORD!,
           APPROVAL_URL: approvalImagecloudFunctionConstruct.cloudFunction.url,
           APPROVER_EMAILS: process.env.APPROVER_EMAILS!,
+          RATE_LIMIT_PER_MINUTE: process.env.RATE_LIMIT_PER_MINUTE!,
         },
         depandOn: cloudFunctionDeploymentConstruct.services,
       }
     );
 
-    await DatastoreConstruct.create(this, "datastore", {
+    const datastore = await DatastoreConstruct.create(this, "datastore", {
       project: project.projectId,
-      servicesAccount: cloudFunctionConstruct.serviceAccount,
+      servicesAccount: genImagecloudFunctionConstruct.serviceAccount,
     });
     await DatastoreConstruct.create(this, "approvalImagedatastore", {
       project: project.projectId,
       servicesAccount: approvalImagecloudFunctionConstruct.serviceAccount,
     });
 
+    new GoogleDatastoreIndex(this, "datastore-index", {
+      project: project.projectId,
+      kind: "GenImageJob",
+      properties: [
+        {
+          name: "email",
+          direction: "DESCENDING",
+        },
+        {
+          name: "modify_time",
+          direction: "DESCENDING",
+        },
+      ],
+      dependsOn: datastore.services,
+    });
+
     new GoogleStorageBucketIamMember(this, "static-site-iam-member", {
       bucket: staticSitePattern1.siteBucket.name,
       role: "roles/storage.legacyBucketWriter",
-      member: "serviceAccount:" + cloudFunctionConstruct.serviceAccount.email,
+      member:
+        "serviceAccount:" + genImagecloudFunctionConstruct.serviceAccount.email,
     });
 
     new TerraformOutput(this, "static-site-url1", {
@@ -135,7 +154,7 @@ class ImageGenStack extends TerraformStack {
     });
 
     new TerraformOutput(this, "gen-image-function-url", {
-      value: cloudFunctionConstruct.cloudFunction.url,
+      value: genImagecloudFunctionConstruct.cloudFunction.url,
     });
 
     new TerraformOutput(this, "gen-image-url", {
@@ -145,7 +164,7 @@ class ImageGenStack extends TerraformStack {
         "/index.html?key=" +
         process.env.SECRET_KEY! +
         "&api=" +
-        cloudFunctionConstruct.cloudFunction.url,
+        genImagecloudFunctionConstruct.cloudFunction.url,
     });
   }
   constructor(scope: Construct, id: string) {

@@ -14,6 +14,7 @@ from email.mime.text import MIMEText
 import urllib.parse
 from google.cloud import datastore
 import datetime
+from datetime import timezone
 
 openai.api_type = "azure"
 openai.api_base = "https://eastus.api.cognitive.microsoft.com/"
@@ -59,7 +60,10 @@ def genimage(request):
 
     if key != os.getenv("SECRET_KEY"):
         return "Unauthorized", 401, headers
-
+    
+    if is_gen_image_job_exceed_rate_limit(email):
+        return "Rate limit exceeded, and please wait for 30s!", 200, headers
+    save_new_gen_image_job(email, prompt)
     response = openai.Image.create(
         prompt=prompt,
         size='1024x1024',
@@ -78,7 +82,7 @@ def genimage(request):
     password = os.getenv("APP_PASSWORD")
 
     params = {'key':key, 'email': email, 'public_url': public_url}
-    save_gen_image_job(email, prompt, public_url)
+    update_gen_image_job(email, public_url);
     send_email(subject, params, sender, recipients, password)   
                   
     return "Please check your email!", 200, headers
@@ -130,17 +134,49 @@ def get_email_body(params:dict) -> str:
     """
     return body
 
-def save_gen_image_job(email: str, prompt:str, image_url:str) -> bool:
+def save_new_gen_image_job(email: str, prompt:str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
-    key = client.key('GenImageJob', email + "->" +image_url)
+    key = client.key('GenImageJob', email)
     entity = datastore.Entity(key=key)
-    now = datetime.datetime.now();
+    now = datetime.datetime.now(timezone.utc);
     entity.update({
         'email': email,
-        'prompt': prompt ,
-        'image_url':image_url,
-        'status': "WAITING_FOR_APPROVAL",
+        'prompt': prompt ,      
+        'status': "GENERATING_IMAGE",
         'create_time': now,
         'modify_time': now 
     })
     client.put(entity)
+
+def update_gen_image_job(email: str, image_url:str) -> bool:
+    client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
+    with client.transaction():
+        old_key = client.key('GenImageJob', email) 
+        old_entity= client.get(old_key)       
+        entity = datastore.Entity(key=client.key('GenImageJob', email + "->" +image_url))
+        entity.update({
+        'email': email,
+        'prompt': old_entity['prompt'] ,      
+        'status': "WAITING_FOR_APPROVAL",
+        'create_time': old_entity['create_time'],
+        'modify_time': datetime.datetime.now(timezone.utc) 
+        })     
+        client.put(entity)
+        client.delete(old_key)     
+
+
+def is_gen_image_job_exceed_rate_limit(email: str) -> bool:
+    client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
+    query = client.query(kind='GenImageJob')
+    query.add_filter('email', '=', email)    
+    query.order = ['-modify_time']
+    results = list(query.fetch(limit=1))
+    if len(results) == 0:
+        return False
+    else:
+        last_approved_time = results[0]['modify_time']
+        now = datetime.datetime.now(timezone.utc)
+        diff = now - last_approved_time
+        waiting_time = 60 / int(os.environ.get('RATE_LIMIT_PER_MINUTE'))
+        return diff.seconds < waiting_time  # 30 seconds rate limit
+    
