@@ -35,14 +35,12 @@
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
 				"ms-python.python",
-				"ms-python.vscode-pylance",		
+				"ms-python.vscode-pylance",
 				"ms-python.autopep8",
 				"ms-python.pylint",
 				"ms-toolsai.jupyter",
 				"github.copilot",
 				"ms-vscode.vscode-typescript-next",
-				"ms-dotnettools.csharp",
-				"svipas.prettier-plus",
 				"googlecloudtools.cloudcode"
 			]
 		},
