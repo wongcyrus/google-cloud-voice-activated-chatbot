@@ -41,7 +41,8 @@
 				"ms-toolsai.jupyter",
 				"github.copilot",
 				"ms-vscode.vscode-typescript-next",
-				"googlecloudtools.cloudcode"
+				"googlecloudtools.cloudcode",
+				"ms-azuretools.vscode-docker"
 			]
 		},
 		"settings": {

@@ -1,4 +1,4 @@
-import time
+from fastapi import FastAPI
 import gradio as gr
 import config as cfg
 from google.cloud import speech
@@ -6,7 +6,9 @@ import vertexai
 from vertexai.preview.language_models import ChatModel
 from google.cloud import translate_v2 as translate
 
-vertexai.init(project="cyrus-testing-2023", location="us-central1")
+app = FastAPI()
+
+vertexai.init(location="us-central1")
 chat_model = ChatModel.from_pretrained("chat-bison@001")
 chat = chat_model.start_chat(
     context="""Your name is a helpful assistant.
@@ -107,4 +109,6 @@ with gr.Blocks() as bot_interface:
     inputs_event.then(lambda: gr.update(interactive=True), None, [user_input], queue=False)
 
 bot_interface.title = cfg.bot["title"]
-bot_interface.launch(share=True,server_name="0.0.0.0")
+# bot_interface.launch(share=True,server_name="0.0.0.0")
+
+app = gr.mount_gradio_app(app, bot_interface, path="/")

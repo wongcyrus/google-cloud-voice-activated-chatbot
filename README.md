@@ -27,4 +27,21 @@ Run the server
 gradio main.py
 ```
 
+## Deploy to GCP CloudRun
+
+```
+gcloud auth login
+gcloud config set project XXXXX
+gcloud config set run/region asia-east2
+gcloud services enable speech.googleapis.com
+gcloud services enable translate.googleapis.com
+gcloud services enable aiplatform.googleapis.com
+gcloud run deploy
+```
+
+For local test, but it cannot run as no permission.
+```
+docker build -t chatbot .
+docker run -it --rm -p 8000:8000 chatbot
+```
 
