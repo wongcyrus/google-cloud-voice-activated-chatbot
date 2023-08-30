@@ -69,7 +69,9 @@ def bot_response(history):
     print(f"Translated text: {text}")
     response = chat.send_message(text, **parameters)
     # response = cfg.bot["temp_response"]
-    history[-1][1] = response.text    
+    result = translate_client.translate(response.text, target_language="zh-TW")
+    text = result["translatedText"]
+    history[-1][1] = text  
     return history
 
 with gr.Blocks() as bot_interface:
