@@ -4,7 +4,6 @@ import config as cfg
 from google.cloud import speech
 import vertexai
 from vertexai.preview.language_models import ChatModel
-from google.cloud import translate_v2 as translate
 
 vertexai.init(project="cyrus-testing-2023", location="us-central1")
 chat_model = ChatModel.from_pretrained("chat-bison@001")
@@ -49,9 +48,9 @@ def bot_response(history):
     # Intergate with ML models to load response.
     parameters = {
         "temperature": temperture.value,
-        "max_output_tokens": 256,
-        "top_p": 0.8,
-        "top_k": 40
+        "max_output_tokens": token_limit.value,
+        "top_p": top_p.value,
+        "top_k": top_k.value
     }
 
     text = history[-1][0]
@@ -62,16 +61,13 @@ def bot_response(history):
         history[-1][1] = "Please tell me something and click send button."       
         return history
     
-    # translate text to English
-    translate_client = translate.Client()
-    result = translate_client.translate(text, target_language="en")
-    text = result["translatedText"]
-    print(f"Translated text: {text}")
+    # trim text and check if it is empty
+    text = text.strip()
+    if not text:        
+        history[-1][1] = "Please tell me something and click send button."       
+        return history    
     response = chat.send_message(text, **parameters)
-    # response = cfg.bot["temp_response"]
-    result = translate_client.translate(response.text, target_language="zh-TW")
-    text = result["translatedText"]
-    history[-1][1] = text  
+    history[-1][1] = response.text  
     return history
 
 with gr.Blocks() as bot_interface:
