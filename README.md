@@ -9,7 +9,6 @@ https://www.googlecloudcommunity.com/gc/Community-Blogs/How-to-quickly-build-a-v
 Enable Google Cloud API
 ```
 gcloud services enable speech.googleapis.com
-gcloud services enable translate.googleapis.com
 gcloud services enable aiplatform.googleapis.com
 ```
 
@@ -34,7 +33,6 @@ gcloud auth login
 gcloud config set project XXXXX
 gcloud config set run/region asia-east2
 gcloud services enable speech.googleapis.com
-gcloud services enable translate.googleapis.com
 gcloud services enable aiplatform.googleapis.com
 gcloud run deploy
 ```
