@@ -115,7 +115,7 @@ with gr.Blocks() as bot_interface:
                               value=40, interactive=True)
         with gr.Column():
             token_limit = gr.Slider(
-                0, 1024, step=1, label="Token limit", value=256, interactive=True)
+                0, 8192, step=1, label="Token limit", value=2048, interactive=True)
             top_p = gr.Slider(0, 1, step=0.1, label="Top P",
                               value=0.8, interactive=True)
     with gr.Row():
