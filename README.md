@@ -23,7 +23,7 @@ Replace XXX with your GCP project name.
 Run the server
 ```
 ./setup.sh
-gradio main.py
+gradio main.py bot_interface
 ```
 
 ## Deploy to GCP CloudRun
