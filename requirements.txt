@@ -1,6 +1,6 @@
 gradio
 google-cloud-speech
 google-cloud-aiplatform
-google-cloud-speech
+google-cloud-logging
 fastapi
 uvicorn

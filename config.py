@@ -1,12 +1,12 @@
 bot = {
-    "banner": """<h1 align="left" style="min-width:200px; margin-top:0;text-align: center;"> Chat with Google Cloud AI</h1> 
+    "banner": """<h1 align="left" style="min-width:200px; margin-top:0;text-align: center;"> Google Cloud Generative AI Chat</h1> 
 
     """,
     "title": "Google Cloud AI Advisor",
     "initial_message": "你好,我是你的AI專家顧問。 今天我能為您提供什麼幫助？",
     "temp_response": "Apologies, I'm not ready yet :(",
     "text_placeholder": "Enter Text",
-    "footer":"""
+    "footer": """
     <style>
 /* Three image containers (use 25% for four, and 50% for two, etc) */
 .column {
