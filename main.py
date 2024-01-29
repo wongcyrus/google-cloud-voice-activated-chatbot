@@ -106,7 +106,7 @@ with gr.Blocks() as bot_interface:
         with gr.Column(scale=1, min_width=70):
             submitBtn = gr.Button("Send")
     with gr.Row():
-        audio_input = gr.Audio(source="microphone", type="filepath")
+        audio_input = gr.Audio(sources=["microphone"], type="filepath")
     with gr.Row():
         with gr.Column():
             temperture = gr.Slider(
