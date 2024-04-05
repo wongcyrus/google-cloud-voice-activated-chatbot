@@ -1,5 +1,5 @@
 bot = {
-    "banner": """<h1 align="left" style="min-width:200px; margin-top:0;text-align: center;"> Google Cloud Generative AI Chat</h1> 
+    "banner": """<h1 align="left" style="min-width:200px; margin-top:0;text-align: center;"> Google Cloud Generative AI Chatbot</h1> 
 
     """,
     "title": "Google Cloud AI Advisor",
@@ -24,10 +24,10 @@ bot = {
 </style>    
 <div class="row">
   <div class="column">
-    <img src='https://cloud.google.com/_static/cloud/images/social-icon-google-cloud-1200-630.png?hl=zh-tw' style='height: 100px;'/>
+    <img src='https://cloud.google.com/_static/cloud/images/social-icon-google-cloud-1200-630.png?hl=zh-tw' style='height: 100px;background-color: white;'/>
   </div>
   <div class="column">
-   <img src='https://it.vtc.edu.hk/site/templates/images/logo/logo.png' style='height: 100px;'/>
+   <img src='https://hkiit.edu.hk/images/HKIIT_Logo_bilingual-p-500.png' style='height: 100px;background-color: white;'/>
   </div>
 </div>   
 """
